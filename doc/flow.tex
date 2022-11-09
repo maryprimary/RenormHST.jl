@@ -1,0 +1,288 @@
+\documentclass{article}
+
+\usepackage{amsmath}
+
+
+\begin{document}
+
+    \section{DQMC review}
+    In DQMC algorithm, we decomposite two-body term with
+    \begin{equation}
+        e^{-\Delta\tau U A^{2}} = \sum_{l} \gamma(l) e^{\sqrt{-\Delta\tau U} \eta(l) A}
+    \end{equation}
+
+    The partition funtion can be written as
+    \begin{equation}
+        \mathcal{Z} = Tr_{F} \sum_{C} \prod^{L_{trot}}_{\tau} e^{-\Delta\tau K} 
+        \prod^{N_site}_{i} \gamma_{\tau, i} e^{\sqrt{-\Delta\tau U} \eta_{\tau, i} A_{i} }
+    \end{equation}
+    trace out the fermionic trace, (the const $\gamma_{i}$ should pull out of $Tr_{F}$)
+    \begin{equation}
+        \begin{aligned}
+            \mathcal{Z} &= \sum_{C} \left[\prod^{L_{trot}} \prod^{N_{site}}_{i} \gamma_{\tau,i}\right]
+            det(\mathcal{I} + \prod^{L_{trot}} e^{-\Delta\tau K}  \prod^{N_{site}}_{i} e^{\sqrt{-\Delta\tau U} \eta_{\tau, i} A_{i}})\\
+            &= \sum_{C} \left[\prod^{L_{trot}} \prod^{N_{site}}_{i} \gamma_{\tau,i}\right]
+            det(\mathcal{I} + \prod^{L_{trot}} B_{\tau}(C)) \\
+            &= \sum_{C} W(C) D(C)
+        \end{aligned}
+    \end{equation}
+    where $W(C) = \prod^{L_{trot}} \prod^{N_{site}}_{i} \gamma_{\tau,i}$, 
+    $D(C)=det(\mathcal{I} + \prod^{L_{trot}} B_{\tau}(C))$ and
+    $D(C)= Tr_{F} \prod^{L_{trot}} e^{-\Delta\tau K}  \prod^{N_{site}}_{i} e^{\sqrt{-\Delta\tau U} \eta_{\tau, i} A_{i}}$
+
+
+    The finite temperature observables
+    \begin{equation}
+        \langle O \rangle = \frac{1}{\mathcal{Z}} Tr_{F} e^{-\beta H} O 
+    \end{equation}
+    we can also decomposite two-body term in numerator
+    \begin{equation}
+        \begin{aligned}
+            \langle O \rangle &= \frac{1}{\mathcal{Z}} 
+            Tr_{F} \sum_{C} \prod^{L_{trot}}_{\tau} e^{-\Delta\tau K} \prod^{N_{site}}_{i} \gamma_{\tau,i} e^{\sqrt{-\Delta\tau U} \eta_{\tau, i} A_{i}} O \\
+            &= \sum_{C} W(C) Tr_{F} 
+            \prod^{L_{trot}}_{\tau} e^{-\Delta\tau K} \prod^{N_{site}}_{i} e^{\sqrt{-\Delta\tau U} \eta_{\tau, i} A_{i}} O / 
+            \sum_{C^{\prime}} W(C^{\prime}) D(C^{\prime}) \\
+            &= \sum_{C} \left[ W(C)D(C)  \frac{Tr_{F} \prod^{L_{trot}}_{\tau} B_{\tau}(C) O }{D(C)} / \sum_{C^{\prime}} W(C^{\prime})D(C^{\prime}) \right] \\
+            &= \sum_{C} S(C) \langle O \rangle_{C} / \sum_{C^{\prime}} S(C^{\prime})
+        \end{aligned}
+    \end{equation}
+    where $S(C) = W(C)D(C)$ and $ \langle O \rangle_{C} = Tr_{F} \prod^{L_{trot}}_{\tau} B_{\tau}(C) O / Tr_{F} \prod^{L_{trot}}_{\tau} B_{\tau}(C)$.
+
+    \section{Sign Problem}
+    We can rewrite the observables as
+    \begin{equation}
+        \begin{aligned}
+            \langle O \rangle 
+            &= \sum_{C} S(C) \langle O \rangle_{C} / \sum_{C^{\prime}} S(C^{\prime})\\
+            &= \frac{ \sum_{C} \vert S(C) \vert \frac{S(C)}{\vert S(C) \vert} \langle O \rangle_{C} / \sum_{C^{\prime\prime}} \vert S(C^{\prime\prime}) \vert }
+            {\sum_{C^{\prime}} \vert S(C) \vert \frac{S(C)}{\vert S(C) \vert} / \sum_{C^{\prime\prime\prime}} \vert S(C^{\prime\prime\prime}) \vert} 
+        \end{aligned}
+    \end{equation}
+    where $S(C) = W(C)D(C)$ and the partition function $Z = \sum_{C} S(C)$.
+    We can calculate the denominator and numerator in Eq.(6) by Monte Carlo algorithm.
+    If the denominator goes to zero, the Sign Problem occurs.
+
+    \section{divide the sampling}
+
+    The steps in this section may be confused, we first explain the main idea of this procedure.
+    \begin{itemize}
+        \item First, we introduce an artificial cutoff $\lambda$ in the observables, $\langle O \rangle^{\lambda}$,
+        the observables recover the exact one when $\lambda \rightarrow -\infty$, $\langle O \rangle = \langle O \rangle^{-\infty}$.
+        \item Second, we find a relation between exact one and cutoff one $\langle O \rangle^{-\infty} = \Omega + \langle O \rangle^{\lambda} / (\omega+1)$
+        \item Third, rescaling the observables, $\langle O \rangle \leftarrow \langle O \rangle^{\lambda} $, and repeat the second untill the results are solvable.
+    \end{itemize}
+    This three procedure form a renormalization process. At the end, we reverse these steps,
+    so we start from a solvable results, and recursively find the origin exact results.    
+
+    We write the observables
+    \begin{equation}
+        \begin{aligned}
+            \langle O \rangle &= \frac{ \sum_{C} S(C) \langle O \rangle_{C} }{ \sum_{C^{\prime}} S(C^{\prime}) }\\
+            &=\frac{ \sum_{C} ReS(C) \frac{S(C)}{ReS(C)} \langle O \rangle_{C} }{ \sum_{C^{\prime}} ReS(C^{\prime}) }
+        \end{aligned}
+    \end{equation}
+    The second line is true because the partition function is real, and $Re$ means real part.
+    Before we reweight the denominator and numerator, we first divide the sampling space.
+    For example, we can divide the denominator
+    \begin{equation}
+        \sum_{C^{\prime}} ReS(C^{\prime}) = \sum_{C^{\prime}} \Theta(\lambda-ReS(C^{\prime})) ReS(C^{\prime}) +  \sum_{C^{\prime}} \Theta(ReS(C^{\prime})-\lambda) ReS(C^{\prime})
+    \end{equation}
+    For notation convenience, we define
+    \begin{equation}
+        \begin{aligned}
+            \sum^{>\lambda}_{C} &= \sum_{C} \Theta(ReS(C)-\lambda)\\
+            \sum^{\mu<<\nu}_{C} &=  \sum_{C} \Theta(ReS(C)-\mu) \Theta(\nu-ReS(C))
+        \end{aligned}
+    \end{equation}
+    The first one means the summation of these HS configurations which have $ReS(C) > \lambda$
+    and the latter one means the summation of these HS configurations whose $ReS(C)$ lying in a shell,
+    $\mu< ReS(C) <\nu$.
+
+    Next, we devide the numerator and denominator,
+    \begin{equation}
+        \begin{aligned}
+            \langle O \rangle &=\frac{ \sum_{C} ReS(C) \frac{S(C)}{ReS(C)} \langle O \rangle_{C} }{ \sum_{C^{\prime}} ReS(C^{\prime}) }\\
+            &=\frac{\sum^{-\infty<<\lambda_{1}}_{C_{1}} ReS(C_{1}) \frac{S(C_{1})}{ReS(C_{1})} \langle O \rangle_{C_{1}} + \sum^{>\lambda_{1}}_{C_{2}} ReS(C_{2}) \frac{S(C_{2})}{ReS(C_{2})} \langle O \rangle_{C_{2}}}
+            {\sum^{-\infty<<\lambda_{1}}_{C_{3}} ReS(C_{3}) + \sum^{>\lambda_{1}}_{C_{4}} ReS(C_{4})} \\
+            %&=\frac{\left(\sum^{-\infty<<\lambda_{1}}_{C} ReS(C) \frac{S(C)}{ReS(C)} \langle O \rangle_{C} + \sum^{>\lambda_{1}}_{C} ReS(C) \frac{S(C)}{ReS(C)} \langle O \rangle_{C}\right) / \sum^{>\lambda_{1}}_{C} ReS(C)}
+            %{1+\sum^{-\infty<<\lambda_{1}}_{C} ReS(C) /  \sum^{>\lambda_{1}}_{C} ReS(C)}
+        \end{aligned}
+    \end{equation}
+    dividing $\sum^{>\lambda_{1}}_{C} ReS(C)$ in the numerator and denominator simultaneously, the denominator will be
+    \begin{equation}
+        \begin{aligned}
+            &\frac{\sum^{-\infty<<\lambda_{1}}_{C_{1}} ReS(C_{1}) + \sum^{>\lambda_{1}}_{C_{2}} ReS(C_{2})}{\sum^{>\lambda_{1}}_{C_{3}} ReS(C_{3})}\\
+            & = \frac{\sum^{-\infty<<\lambda_{1}}_{C_{1}} ReS(C_{1})}{\sum^{>\lambda_{1}}_{C_{2}} ReS(C_{2})} + 1\\
+            & = \omega(-\infty,\lambda) + 1
+        \end{aligned}
+    \end{equation}
+    Here we define $\omega(\mu,\nu) = \frac{\sum^{\mu<<\nu}_{C_{1}} ReS(C_{1})}{\sum^{>\nu}_{C_{2}} ReS(C_{2})}$
+    And now, we look at the numerator, the first term
+    \begin{equation}
+        \begin{aligned}
+            &\frac{\sum^{-\infty<<\lambda_{1}}_{C_{1}} ReS(C_{1}) \frac{S(C_{1})}{ReS(C_{1})} \langle O \rangle_{C_{1}}}{\sum^{>\lambda}_{C_{2}} ReS(C_{2})} \\
+            &=\frac{\sum^{-\infty<<\lambda_{1}}_{C_{1}} ReS(C_{1}) \frac{S(C_{1})}{ReS(C_{1})} \langle O \rangle_{C_{1}} / \sum^{-\infty<<\lambda_{1}}_{C_{3}} ReS(C_{3})}{\sum^{>\lambda}_{C_{2}} ReS(C_{2}) / \sum^{-\infty<<\lambda_{1}}_{C_{4}}ReS(C_{4})} \\
+            &=\langle O \rangle^{-\infty<<\lambda_{1}} \omega(-\infty, \lambda_{1})
+        \end{aligned}
+    \end{equation}
+    the second term
+    \begin{equation}
+        \frac{\sum^{>\lambda_{1}}_{C_{1}} ReS(C_{1}) \frac{S(C_{1})}{ReS(C_{1})} \langle O \rangle_{C_{1}}}{\sum^{>\lambda}_{C_{2}} ReS(C_{2})} = \langle O \rangle^{>\lambda_{1}}
+    \end{equation}
+    Here, we define $\langle O \rangle^{>\lambda}$ and $\langle O \rangle^{\nu<<\mu}$.
+    The observables now can be written
+    \begin{equation}
+    \boxed{
+        \langle O \rangle = \frac{\langle O \rangle^{-\infty<<\lambda_{1}} \omega(-\infty, \lambda_{1}) + \langle O \rangle^{>\lambda_{1}}}{\omega(-\infty,\lambda) + 1}
+    }
+    \end{equation}
+    
+    Now comes to the critical part, by choosing a proper $\lambda_{1}$,
+    the denominator $\omega(-\infty,\lambda) + 1$ \textbf{will not} goes to zero when Sign Problem occurs,
+    and the Sign Problem will be absorbed in the $\langle O \rangle^{>\lambda_{1}}$ and $\omega(-\infty,\lambda)$.
+    For example, we can choose a negative $\lambda_{1}$ with large absolute value, 
+    and the term of $\langle O \rangle^{-\infty<<\lambda_{1}}$ can be compute by
+    \begin{equation}
+        \begin{aligned}
+            &\langle O \rangle^{-\infty<<\lambda_{1}} = \frac{\sum^{-\infty<<\lambda_{1}}_{C_{1}} ReS(C_{1})  \frac{S(C_{1})}{ReS(C_{1})} \langle O \rangle_{C_{1}} }{\sum^{-\infty<<\lambda_{1}}_{C_{2}} ReS(C_{2})}\\
+            &=\frac{\sum^{-\infty<<\lambda_{1}}_{C_{1}} \vert ReS(C_{1}) \vert \frac{ReS(C_{1})}{\vert ReS(C_{1}) \vert} \frac{S(C_{1})}{ReS(C_{1})} \langle O \rangle_{C_{1}} / \sum^{-\infty<<\lambda1}_{C_{3}} \vert ReS(C_{3}) \vert }{\sum^{-\infty<<\lambda_{1}}_{C_{2}} \vert ReS(C_{2}) \vert \frac{ReS(C_{2})}{\vert ReS(C_{2}) \vert} / \sum^{-\infty<<\lambda1}_{C_{4}} \vert ReS(C_{4}) \vert}\\
+        \end{aligned}
+    \end{equation}
+    after reweight, this value is well behaved, because the $ReS(C)$ lie in a shell, the average sign equals to $1$.
+
+    The $\langle O \rangle^{>\lambda_{1}}$ has the form
+    \begin{equation}
+        \langle O \rangle^{>\lambda_{1}} = \frac{\sum^{>\lambda_{1}}_{C_{1}} ReS(C_{1}) \frac{S(C_{1})}{ReS(C_{1})} \langle O \rangle_{C_{1}}}{\sum^{>\lambda_{1}}_{C_{2}} ReS(C_{2})}
+    \end{equation}
+    this is \textbf{not} well behaved since the denominator may be close to zero if the shell is narrow.
+    this happend also in $\omega(-\infty, \lambda_{1})$
+    \begin{equation}
+        \omega(\mu,\nu) = \frac{\sum^{\mu<<\nu}_{C_{1}} ReS(C_{1})}{\sum^{>\nu}_{C_{2}} ReS(C_{2})}
+    \end{equation}
+
+    Then we divide the sampling recursively, we have this equation similiar with Eq.(14)
+    \begin{equation}
+        \begin{aligned}
+            &\langle O \rangle^{>\lambda_{1}} = \frac{\sum^{>\lambda_{1}}_{C_{1}} ReS(C_{1}) \frac{S(C_{1})}{ReS(C_{1})} \langle O \rangle_{C_{1}}}{\sum^{>\lambda_{1}}_{C_{2}} ReS(C_{2})}\\
+            &=\frac{\sum^{\lambda_{1}<<\lambda_{2}}_{C_{1}} ReS(C_{1}) \frac{S(C_{1})}{ReS(C_{1})} \langle O \rangle_{C_{1}} + \sum^{>\lambda_{2}}_{C_{2}} ReS(C_{2}) \frac{S(C_{2})}{ReS(C_{2})} \langle O \rangle_{C_{2}}  }
+            {\sum^{\lambda_{1}<<\lambda_{2}}_{C_{3}} ReS(C_{3}) + \sum^{>\lambda_{2}}_{C_{4}} ReS(C_{4})}\\
+            &=\frac{\omega(\lambda_{1},\lambda_{2}) \langle O \rangle^{\lambda_{1}<<\lambda_{2}} + \langle O \rangle^{>\lambda_{2}}}{\omega(\lambda_{1}, \lambda_{2})+1}
+        \end{aligned}
+    \end{equation}
+
+    Similiar to this, the $\omega(-\infty,\lambda_{1})$ can be written as
+    \begin{equation}
+        \begin{aligned}
+            \omega(-\infty,\lambda_{1}) &= \frac{\sum^{-\infty<<\lambda_{1}}_{C_{1}} ReS(C_{1})}{\sum^{>\lambda_{1}}_{C_{2}} ReS(C_{2})} \\
+            &= \frac{\sum^{-\infty<<\lambda_{1}}_{C_{1}} ReS(C_{1})}{\sum^{\lambda_{1}<<\lambda_{2}}_{C_{2}} ReS(C_{2}) + \sum^{>\lambda_{2}}_{C_{3}} ReS(C_{3})} \\
+            &= \frac{\sum^{-\infty<<\lambda_{1}}_{C_{1}} ReS(C_{1}) / \sum^{\lambda_{1}<<\lambda_{2}}_{C_{2}}ReS(C_{2})}
+            {1+\sum^{>\lambda_{2}}_{C_{3}} ReS(C_{3})/\sum^{\lambda_{1}<<\lambda_{2}}_{C_{4}}ReS(C_{4})} \\
+            &= \frac{\omega^{\prime}(-\infty, \lambda_{1}, \lambda_{2})}
+            {1+1/\omega(\lambda_{1}, \lambda_{2})} \\
+            &= \frac{\omega^{\prime}(-\infty, \lambda_{1}, \lambda_{2}) \omega(\lambda_{1}, \lambda_{2})}{ \omega(\lambda_{1}, \lambda_{2}) + 1}
+        \end{aligned}
+    \end{equation}
+
+    Here we define the 
+    \begin{equation}
+        \begin{aligned}
+            \omega^{\prime}(\mu, \nu, \xi) &= \frac{ \sum^{\mu<<\nu}_{C_{1}} ReS(C_{1}) }
+            { \sum^{\nu<<\xi}_{C_{2}}ReS(C_{2}) } \\
+            &= \frac{ \sum^{\mu<<\xi}_{C_{1}} \vert ReS(C_{1}) \vert \frac{ReS(C_{1})}{\vert ReS(C_{1}) \vert}  \Theta(\nu - ReS(C_{1})) / \sum^{\mu<<\xi}_{C_{2}} \vert ReS(C_{2}) \vert}
+            { \sum^{\mu<<\xi}_{C_{3}} \vert ReS(C_{3}) \vert \frac{ReS(C_{3})}{\vert ReS(C_{3}) \vert}  \Theta(ReS(C_{3})-\nu) / \sum^{\mu<<\xi}_{C_{4}} \vert ReS(C_{4}) \vert} 
+        \end{aligned}
+    \end{equation}
+    This is also well behaved since $\mu$ and $\xi$ are close.
+    
+    
+    We can \textbf{recursively repeat this procedure}, and every observables in the narrow shell $\langle O \rangle^{\lambda_{n}<<\lambda_{n+1}}$ is well
+    behaved, untill we reach a boundary, that is $\lambda_{M} = 0$. When we reach this boundary, the higher observables is
+    \begin{equation}
+        \begin{aligned}
+            \langle O \rangle^{>\lambda_{M}} &= \langle O \rangle^{>0} \\
+            &=\frac{\sum_{C_{1}} \Theta(ReS(C_{1})) ReS(C_{1}) \frac{S(C_{1})}{ReS(C_{1})} \langle O \rangle_{C_{1}}}{\sum_{C_{2}} \Theta(ReS(C_{2})) ReS(C_{2})}\\
+            &=\frac{\sum^{>0}_{C_{1}} \vert ReS(C_{1}) \vert \frac{ReS(C_{1})}{\vert ReS(C_{1}) \vert}  \frac{S(C_{1})}{ReS(C_{1})} \langle O \rangle_{C_{1}} / \sum^{>0}_{C_{3}} \vert ReS(C_{3}) \vert}
+            {\sum^{>0}_{C_{2}} \vert ReS(C_{2}) \vert \frac{ReS(C_{2})}{\vert ReS(C_{2}) \vert} / \sum^{>0}_{C_{4}} \vert ReS(4) \vert}
+        \end{aligned}
+    \end{equation}
+    In fact, the reweight in the third line can be ignored, because the sign always positive.
+    The $\omega(\lambda_{M-1}, \lambda_{M})$ can be written as
+    \begin{equation}
+        \begin{aligned}
+            &\omega(\lambda_{M-1}, \lambda_{M}) = \omega(\lambda_{M-1}, 0)\\
+            &= \frac{\sum^{\lambda_{M-1}<<0}_{C_{1}} ReS(C_{1})}
+            {\sum^{>0}_{C_{2}} ReS(C_{2})} \\
+            &= \frac{\sum^{\lambda_{M-1}<<\infty}_{C_{1}} \vert ReS(C_{1}) \vert \frac{ReS(C_{1})}{\vert ReS(C_{1})\vert } \Theta(-ReS(C_{1}))  / \sum^{\lambda_{M-1}<<\infty}_{C_{2}} \vert ReS(C_{2}) \vert}
+            {\sum^{\lambda_{M-1}<<\infty}_{C_{3}} \vert ReS(C_{3}) \vert \frac{ReS(C_{3})}{\vert ReS(C_{3})\vert } \Theta(ReS(C_{1}))  / \sum^{\lambda_{M-1}<<\infty}_{C_{4}} \vert ReS(C_{4}) \vert}
+        \end{aligned}
+    \end{equation}
+    This value is well behaved because of the $\Theta$ funtion, unless the 
+    $\sum^{\lambda_{M-1}<<\infty}_{C_{4}} \vert ReS(C_{4}) \vert$ is much larger than $\sum^{>0}_{C_{2}} ReS(C_{2})$.
+    However, we can choosing the value of $\lambda_{M-1}$ to avoid.
+
+    Now, we have
+    \begin{equation}
+    \boxed{
+        \langle O \rangle^{\lambda_{M}=0} = \frac{\sum^{>0}_{C_{1}} \vert ReS(C_{1}) \vert \frac{ReS(C_{1})}{\vert ReS(C_{1}) \vert}  \frac{S(C_{1})}{ReS(C_{1})} \langle O \rangle_{C_{1}} / \sum^{>0}_{C_{3}} \vert ReS(C_{3}) \vert}
+        {\sum^{>0}_{C_{2}} \vert ReS(C_{2}) \vert \frac{ReS(C_{2})}{\vert ReS(C_{2}) \vert} / \sum^{>0}_{C_{4}} \vert ReS(4) \vert}
+        }
+    \end{equation}
+    \begin{equation}
+        \boxed{
+        \omega(\lambda_{M-1}, \lambda_{M}=0) = \frac{\sum^{\lambda_{M-1}<<\infty}_{C_{1}} ReS(C_{1}) \Theta(-ReS(C_{1}))  }
+        {\sum^{\lambda_{M-1}<<\infty}_{C_{3}} ReS(C_{3}) \Theta(ReS(C_{1}))  }
+        }
+    \end{equation}
+    And we have the recursive relation
+    \begin{equation}
+        \boxed{
+        \omega(\lambda_{N-1},\lambda_{N}) = \frac{\omega^{\prime}(\lambda_{N-1}, \lambda_{N}, \lambda_{N+1}) \omega(\lambda_{N}, \lambda_{N+1})}{ \omega(\lambda_{N}, \lambda_{N+1}) + 1}
+        }
+    \end{equation}
+    and
+    \begin{equation}
+        \boxed{
+        \langle O \rangle^{>\lambda_{N-1}} = \frac{\omega(\lambda_{N-1},\lambda_{N}) \langle O \rangle^{\lambda_{N-1}<<\lambda_{N}} + \langle O \rangle^{>\lambda_{N}}}{\omega(\lambda_{N-1}, \lambda_{N})+1}
+        }
+    \end{equation}
+    where
+    \begin{equation}
+        \boxed{
+        \omega^{\prime}(\lambda_{N-1}, \lambda_{N}, \lambda_{N+1}) = \frac{ \sum^{\lambda_{N-1}<<\lambda_{N+1}}_{C_{1}} ReS(C_{1})  \Theta(\lambda_{N} - ReS(C_{1}))}
+        { \sum^{\lambda_{N-1}<<\lambda_{N+1}}_{C_{3}} ReS(C_{3})  \Theta(ReS(C_{3})-\lambda_{N}) } 
+        }
+    \end{equation}
+    and 
+    \begin{equation}
+        \boxed{
+            \langle O \rangle^{\lambda_{N-1}<<\lambda_{N}} = \frac{\sum^{\lambda_{N-1}<<\lambda_{N}}_{C_{1}} ReS(C_{1})  \frac{S(C_{1})}{ReS(C_{1})} \langle O \rangle_{C_{1}}  }
+            {\sum^{\lambda_{N-1}<<\lambda_{N}}_{C_{2}} ReS(C_{2}) }\\
+        }
+    \end{equation}
+
+    We can start from $\lambda_{M}=0$, $\lambda_{M-1}$, $\lambda_{M-2}$, and repeat the recursion, which is the inverse of the origin recursion,
+    to get the $\langle O \rangle = \langle O \rangle^{>-\infty}$ finally.
+
+
+    \section{flow equation}
+    In continumm limit
+    \begin{equation}
+        \begin{aligned}
+            S^{>\lambda_{1}} &= (1 + \omega (\lambda_{2})* d \lambda) S^{>\lambda_{2}}\\
+            d S^{\lambda_{2}} &= \omega (\lambda_{2})*d \lambda \\
+            S^{\lambda_{2}} & = S^{>0} e^{\int^{\lambda_{2}}_{0} \omega(\lambda) d\lambda}
+        \end{aligned}
+    \end{equation}
+    observables
+    \begin{equation}
+        \begin{aligned}
+            \langle O \rangle^{>\lambda_{1}} - \langle O \rangle^{>\lambda_{2}} &= 
+            \frac{\omega(\lambda_{1}, \lambda_{2})}{1+\omega(\lambda_{1},\lambda_{2})} (\langle O \rangle^{\lambda_{1}<<\lambda_{2}} - \langle O \rangle^{>\lambda_{2}} ) \\
+            d \langle O \rangle^{\lambda_{2}} &= \omega(\lambda_{2}) d \lambda (\langle O \rangle^{\lambda_{1}<<\lambda_{2}} - \langle O \rangle^{>\lambda_{2}} ) \\
+            \langle O \rangle^{\lambda_{2}} & = \langle O \rangle^{>0} e^{-\int^{\lambda_{2}}_{0} \omega(\lambda) d\lambda} + \langle O \rangle^{-\infty<<\lambda_{2}}
+        \end{aligned}
+    \end{equation}
+
+\end{document}
+

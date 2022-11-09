@@ -1,0 +1,4 @@
+.vscode
+doc/*
+!doc/flow.tex
+!doc/flow.pdf
