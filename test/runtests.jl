@@ -5,4 +5,6 @@ using Test
 
 #include("updatetests.jl")
 
-include("mcsumtests.jl")
+#include("mcsumtests.jl")
+
+include("flowtest.jl")

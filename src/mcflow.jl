@@ -190,10 +190,10 @@ function omegaflow(looptime::T,
     oldSC = @sgn 1.0 Bseq
     #println(cfgnow, SCnow)
     haverec = falses(length(shells))
-    wgtsnow = Vector{Float64}(undef, length(shells))
-    SCsnow = Vector{ComplexF64}(undef, length(shells))
-    numsnow = Vector{ComplexF64}(undef, length(shells))
-    densnow = Vector{ComplexF64}(undef, length(shells))
+    wgtsnow = zeros(Float64, length(shells))
+    SCsnow = zeros(ComplexF64, length(shells))
+    numsnow = zeros(ComplexF64,  length(shells))
+    densnow = zeros(ComplexF64,  length(shells))
     #
     resc = real(oldSC)
     #用来记录相对的权重，在一次计算中相对权重一样大
@@ -213,6 +213,9 @@ function omegaflow(looptime::T,
             prSC = @sgn prwgt Bseq
             #找到符合其抽样的位置
             isrec = @pull_shell real(prSC) shells haverec
+            if ismissing(isrec)
+                continue
+            end
             if isrec
                 #如果之前记录过，利用之前记录的进行Metropolis
                 SCshell = @pull_shell real(prSC) shells SCsnow
@@ -246,6 +249,18 @@ function omegaflow(looptime::T,
 end
 
 
+"""
+创建观测量的shell
+"""
+function obser_shells(points::Vector{Float64})
+    shells = Vector{SignShell}(undef, length(points)+1)
+    shells[1] = SignShell(-Inf, missing, points[1])
+    for pidx in Base.OneTo(length(points)-1)
+        shells[pidx+1] = SignShell(points[pidx], missing, points[pidx+1])
+    end
+    shells[end] = SignShell(points[end], missing, Inf)
+    return shells
+end
 
 """
 创建omega的shell

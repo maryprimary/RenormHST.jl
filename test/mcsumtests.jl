@@ -47,7 +47,7 @@ end
     inicfg = random_configuration(10, 1)
     gamma = 0.25*[1-(√6/3), 1+(√6/3), 1+(√6/3), 1-(√6/3)]
     wgtori = prod(map(x->gamma[x], inicfg))
-    ltm = 100000
+    ltm = 10000
     sgn, val = mcsum(ltm, ohb, inicfg, gfunc)
     #println(16*val*wgtori/ltm)
     println(sgn/ltm, " ", val/ltm)
@@ -67,7 +67,7 @@ end
     inicfg = random_configuration(10, 1)
     gamma = 0.25*[1-(√6/3), 1+(√6/3), 1+(√6/3), 1-(√6/3)]
     wgtori = prod(map(x->gamma[x], inicfg))
-    ltm = 100000
+    ltm = 10000
     #shells
     shells::Vector{SignShell} = []
     push!(shells, SignShell(-Inf, missing, -1e8))
@@ -102,7 +102,7 @@ end
     inicfg = random_configuration(10, 1)
     gamma = 0.25*[1-(√6/3), 1+(√6/3), 1+(√6/3), 1-(√6/3)]
     wgtori = prod(map(x->gamma[x], inicfg))
-    ltm = 100000
+    ltm = 10000
     #shells
     shells1::Vector{SignShell} = []
     push!(shells1, SignShell(-Inf, missing, -1e8))
