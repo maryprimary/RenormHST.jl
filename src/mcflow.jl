@@ -284,5 +284,16 @@ end
 
 """
 计算修正
+ob1 = <>^{L0<<Inf}
+ob2 = <>^{L1<<L0}
+om1 = w(L1<L0<Inf)
+om2 = w(L2<L1<L0)
+返回
+ob3 = <>^{L1<<Inf}
+om3 = w(L2<<L1<<Inf)
 """
-
+function omega_step(ob1, om1, ob2, om2)
+    ob3 = (om1*ob2 + ob1) / (1 + om1)
+    om3 = (om1*om2) / (1 + om1)
+    return ob3, om3
+end
