@@ -117,7 +117,6 @@ B_l = e^{-ΔτK} e^{-ΔτV(l)}
     return quote
         bmat = edk
         vmat = zeros(size(vops[1]))
-        @assert size(vops) == size(cffs) == size(vhss)
         for (op, cf, hs) in zip(vops, cffs, vhss)
             #println(hs)
             vmat = vmat + cf*$(η)[hs]*op
@@ -134,6 +133,7 @@ end
 function Bmarr(cfg::Matrix{T}, hub::GeneralHubbard) where T <: Integer
     Bseq = []
     siz = size(cfg)
+    @assert length(hub.Hv) == length(hub.Hg) == siz[2]
     for lidx in Base.OneTo(siz[1])
         push!(Bseq, Bmat_τ(hub.e_dτHk, hub.Hv, hub.Hg, cfg[lidx, :]))
     end
