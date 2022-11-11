@@ -151,8 +151,8 @@ macro push_theta(sc, shells, nums, dens)
         __ReSC = real($(esc(sc)))
         for (sidx, sh) in enumerate($(esc(shells)))
             if __ReSC < sh.upper && __ReSC >= sh.lower
-                $(esc(nums))[sidx] = __ReSC < sh.middl ? $(esc(sc)) / abs(__ReSC) : 0
-                $(esc(dens))[sidx] = __ReSC >= sh.middl ? $(esc(sc)) / abs(__ReSC) : 0
+                $(esc(nums))[sidx] = __ReSC < sh.middl ? __ReSC / abs(__ReSC) : 0
+                $(esc(dens))[sidx] = __ReSC >= sh.middl ? __ReSC / abs(__ReSC) : 0
             end
         end
     end
@@ -167,8 +167,8 @@ macro add_theta(sc, shells, nums, dens)
         __ReSC = real($(esc(sc)))
         for (sidx, sh) in enumerate($(esc(shells)))
             if __ReSC < sh.upper && __ReSC >= sh.lower
-                $(esc(nums))[sidx] += __ReSC < sh.middl ? $(esc(sc)) / abs(__ReSC) : 0
-                $(esc(dens))[sidx] += __ReSC >= sh.middl ? $(esc(sc)) / abs(__ReSC) : 0
+                $(esc(nums))[sidx] += __ReSC < sh.middl ? __ReSC / abs(__ReSC) : 0
+                $(esc(dens))[sidx] += __ReSC >= sh.middl ? __ReSC / abs(__ReSC) : 0
             end
         end
     end
