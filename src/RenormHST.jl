@@ -20,7 +20,8 @@ include("mcsum.jl")
 export mcsum
 
 include("mcflow.jl")
-export omegaflow, obserflow, SignShell, omega_shells, obser_shells, omega_step
+export omegaflow, obserflow, SignShell, omega_shells, obser_shells
+export omega_steps, obser_steps
 
 
 end # module RenormHST

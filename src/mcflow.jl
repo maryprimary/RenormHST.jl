@@ -99,6 +99,21 @@ function obserflow(looptime::T,
             prSC = @sgn prwgt Bseq
             #找到符合其抽样的位置
             isrec = @pull_shell real(prSC) shells haverec
+            #如果查找不到，代表没有shell能包含现在的HS
+            #直接continue可能导致一直没有合适的HS
+            if ismissing(isrec)
+                #println(real(prSC), " ", shells)
+                #if (rand() < 0.5)
+                #     oldwgt = prwgt
+                #     oldSC = prSC
+                #     oldcfg .= prcfg
+                #     #记录到shell
+                #     #resc = real(oldSC)
+                #     #@push_shell resc shells wgtsnow oldwgt
+                #     #@push_shell resc shells SCsnow oldSC
+                # end
+                continue
+            end
             if isrec
                 #如果之前记录过，利用之前记录的进行Metropolis
                 SCshell = @pull_shell real(prSC) shells SCsnow
@@ -202,6 +217,8 @@ function omegaflow(looptime::T,
     @push_shell resc shells SCsnow oldSC
     #println(resc, numsnow, densnow)
     @push_theta oldSC shells numsnow densnow
+    #prcount = 0
+    #prpos = 0
     for itime in Base.OneTo(looptime)
         for ind in CartesianIndices(inicfg)
             prs = @flip oldcfg ind
@@ -213,13 +230,32 @@ function omegaflow(looptime::T,
             prSC = @sgn prwgt Bseq
             #找到符合其抽样的位置
             isrec = @pull_shell real(prSC) shells haverec
+            #println(isrec)
+            #如果查找不到，代表没有shell能包含现在的HS
+            #直接continue可能导致一直没有合适的HS
             if ismissing(isrec)
+               #println(real(prSC), " ", shells)
+               #=
+                if (rand() < 0.5)
+                    oldwgt = prwgt
+                    oldSC = prSC
+                    oldcfg .= prcfg
+                    #记录到shell
+                    resc = real(oldSC)
+                    @push_shell resc shells wgtsnow oldwgt
+                    @push_shell resc shells SCsnow oldSC
+                end
+                =#
                 continue
             end
             if isrec
                 #如果之前记录过，利用之前记录的进行Metropolis
                 SCshell = @pull_shell real(prSC) shells SCsnow
                 prpr = min(1.0, abs(real(prSC)) / abs(real(SCshell)))
+                #println(prpr)
+                #if real(prSC) > 0
+                #    prpos += 1
+                #end
                 if (rand() < prpr)
                     oldwgt = prwgt
                     oldSC = prSC
@@ -228,6 +264,7 @@ function omegaflow(looptime::T,
                     resc = real(oldSC)
                     @push_shell resc shells wgtsnow oldwgt
                     @push_shell resc shells SCsnow oldSC 
+                    #prcount += 1
                 end
             else
                 #如果之前没有记录，直接加入
@@ -245,6 +282,7 @@ function omegaflow(looptime::T,
         #进行观测
         @add_theta oldSC shells numsnow densnow
     end
+    #println("omega flow, prcount ", prcount, " ", shells, " ", prpos) 
     return numsnow, densnow
 end
 
@@ -272,7 +310,9 @@ function omega_shells(shells::Vector{SignShell})
     tidx = 1
     while true
         push!(sh1, SignShell(shells[tidx].lower, shells[tidx].upper, shells[tidx+1].upper))
-        push!(sh2, SignShell(shells[tidx+1].lower, shells[tidx+1].upper, shells[tidx+2].upper))
+        if (tidx+2 <= length(shells))
+            push!(sh2, SignShell(shells[tidx+1].lower, shells[tidx+1].upper, shells[tidx+2].upper))
+        end
         tidx += 2
         if tidx >= olen
             break
@@ -297,3 +337,47 @@ function omega_step(ob1, om1, ob2, om2)
     om3 = (om1*om2) / (1 + om1)
     return ob3, om3
 end
+
+
+"""
+计算omega所有的
+"""
+function omega_steps(oshell, ompris)
+    mshell = Vector{SignShell}(undef, length(oshell))
+    omegal = zeros(ComplexF64, length(oshell))
+    mshell[end] = SignShell(oshell[end].lower, oshell[end].middl, oshell[end].upper) 
+    omegal[end] = ompris[end]
+    for oidx in Base.OneTo(length(oshell)-1)
+        if (mshell[end-oidx+1].lower != oshell[end-oidx].middl ||
+            mshell[end-oidx+1].middl != oshell[end-oidx].upper)
+            throw(error("oshell "*string(oidx)*"do not match"))
+        end
+        mshell[end-oidx] = SignShell(oshell[end-oidx].lower, oshell[end-oidx].middl,
+        mshell[end-oidx+1].upper)
+        omegal[end-oidx] = ompris[end-oidx]*omegal[end-oidx+1] / (1 + omegal[end-oidx+1])
+    end
+    #mshell[1] = SignShell(oshell[1].lower, oshell[1].middl, mshell[2].upper)
+    #omegal[1] = ompris[1]*omegal[2] / (1 + omegal[2])
+    return mshell, omegal
+end
+
+
+"""
+计算所有的obser
+"""
+function obser_steps(shells, obsers, momegas)
+    mobser = Vector{typeof(obsers[end])}(undef, length(shells))
+    mshell2 = Vector{SignShell}(undef, length(shells))
+    mobser[end] = obsers[end]
+    mshell2[end] = SignShell(shells[end].lower, missing, shells[end].upper)
+    for oidx in Base.OneTo(length(shells)-1)
+        if (shells[end-oidx].upper != mshell2[end-oidx+1].lower)
+            throw(error("shells "*string(oidx)*"do not match"))
+        end
+        mshell2[end-oidx] = SignShell(shells[end-oidx].lower, missing, mshell2[end-oidx+1].upper)
+        mobser[end-oidx] = (momegas[end-oidx+1]*obsers[end-oidx] + mobser[end-oidx+1]) / (1 + momegas[end-oidx+1])
+    end
+    return mshell2, mobser
+end
+
+
