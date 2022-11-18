@@ -98,16 +98,15 @@ end
 
 
 @testset "shell" begin
-    shells0 = obser_shells([-1e13, 0.0])
+    shells0 = obser_shells([-1e40, -1e30, -1e13, 0.0])
     shells1, shells2 = omega_shells(shells0)
     println(shells0)
     println(shells1)
     println(shells2)
     #
-    function gfunc(Bseq)
-        siz = size(Bseq[1])
-        grf = inv(Diagonal(ones(siz[1])) + RenormHST.BprodUDV(Bseq))
-        return grf
+    function rho(grf)
+        den = sum([grf[idx, idx] for idx in Base.OneTo(6)])
+        return den / 6
     end
     #
     Random.seed!(21174)
@@ -136,27 +135,26 @@ end
     mshell, momega = omega_steps(oshell, omegas)
     println(mshell, momega)
     #
-    sgn, val = obserflow(ltm, ohb, inicfg, shells0, gfunc)
-    grfs = Vector{Vector{ComplexF64}}(undef, length(shells0))
+    sgn, grf, val = obserflow(ltm, ohb, inicfg, shells0, rho)
+    dens = Vector{ComplexF64}(undef, length(shells0))
     for sidx in Base.OneTo(length(shells0))
         if isassigned(sgn, sidx) && isassigned(val[1], sidx)
-            grfs[sidx] = diag(val[1][sidx]) / sgn[sidx]
+            dens[sidx] = val[1][sidx] / sgn[sidx]
         end
     end
-    mshell2, mobser = obser_steps(shells0, grfs, momega)
+    mshell2, mobser = obser_steps(shells0, dens, momega)
     println(mshell2)
-    println(mobser[3])
-    println(mobser[2])
-    println(mobser[1])
+    for idx in 1:1:length(shells0)
+        println(mobser[end-idx+1])
+    end
 end
 
-
+#=
 @testset "shell diff" begin
     #
-    function gfunc(Bseq)
-        siz = size(Bseq[1])
-        grf = inv(Diagonal(ones(siz[1])) + RenormHST.BprodUDV(Bseq))
-        return grf
+    function rho(grf)
+        den = sum([grf[idx, idx] for idx in Base.OneTo(6)])
+        return den / 6
     end
     #
     Random.seed!(21174)
@@ -167,11 +165,11 @@ end
     ltm = 10000
     #
     shells0 = obser_shells([-1e13, 0.0])
-    sgn, val = obserflow(ltm, ohb, inicfg, shells0, gfunc)
-    grfs = Vector{Vector{ComplexF64}}(undef, length(shells0))
+    sgn, grf, val = obserflow(ltm, ohb, inicfg, shells0, rho)
+    grfs = Vector{ComplexF64}(undef, length(shells0))
     for sidx in Base.OneTo(length(shells0))
         if isassigned(sgn, sidx) && isassigned(val[1], sidx)
-            grfs[sidx] = diag(val[1][sidx]) / sgn[sidx]
+            grfs[sidx] = val[1][sidx] / sgn[sidx]
         end
     end
     println(grfs[end])
@@ -184,17 +182,17 @@ end
     ltm = 10000
     #
     shells0 = obser_shells([-1e14, -1e13, 0.0])
-    sgn, val = obserflow(ltm, ohb, inicfg, shells0, gfunc)
+    sgn, grf, val = obserflow(ltm, ohb, inicfg, shells0, rho)
     println(sgn, val)
-    grfs = Vector{Vector{ComplexF64}}(undef, length(shells0))
+    grfs = Vector{ComplexF64}(undef, length(shells0))
     for sidx in Base.OneTo(length(shells0))
         if isassigned(sgn, sidx) && isassigned(val[1], sidx)
-            grfs[sidx] = diag(val[1][sidx]) / sgn[sidx]
+            grfs[sidx] = val[1][sidx] / sgn[sidx]
         end
     end
     println(grfs[end])
 end
-
+=#
 
 
 #=

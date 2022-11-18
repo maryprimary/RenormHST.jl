@@ -3,6 +3,15 @@
 =#
 
 
+macro __mcsum_gfunc(Bseq)
+    quote
+        siz = size($(esc(Bseq))[1])
+        grf = inv(Diagonal(ones(siz[1])) + BprodUDV($(esc(Bseq))))
+        grf
+    end
+end
+
+
 function mcsum(looptime::T, hub::GeneralHubbard, inicfg::Matrix{P}, 
     valexprs...) where {T<:Integer, P<:Integer}
     _γ = [1-(√6/3), 1+(√6/3), 1+(√6/3), 1-(√6/3)]
@@ -14,8 +23,10 @@ function mcsum(looptime::T, hub::GeneralHubbard, inicfg::Matrix{P},
     println(cfgnow, SCnow)
     val = []
     sgn = real(SCnow) / abs(real(SCnow))
+    baregrf = @__mcsum_gfunc Bseq
+    grf = SCnow / (abs(real(SCnow))) * baregrf
     for vexp in valexprs
-        push!(val, SCnow * vexp(Bseq) / abs(real(SCnow))) 
+        push!(val, SCnow * vexp(baregrf) / abs(real(SCnow))) 
     end
     #val = zeros(16)#SCnow*wgtnow
     for itime in Base.OneTo(looptime)
@@ -42,11 +53,13 @@ function mcsum(looptime::T, hub::GeneralHubbard, inicfg::Matrix{P},
             #val[(prcfg[1]-1)*4+prcfg[2]] += 1
         end
         sgn += real(SCnow) / abs(real(SCnow))
+        baregrf = @__mcsum_gfunc Bseq
+        grf += SCnow * baregrf / abs(real(SCnow))
         for (vidx, vexp) in enumerate(valexprs)
-            val[vidx] += SCnow * vexp(Bseq) / abs(real(SCnow))
+            val[vidx] += SCnow * vexp(baregrf) / abs(real(SCnow))
         end
     end
-    return sgn, val
+    return sgn, grf, val
 end
 
 

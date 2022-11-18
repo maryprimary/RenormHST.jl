@@ -54,6 +54,15 @@ macro pull_shell(ReSC, shells, arr)
 end
 
 
+macro __mcflow_gfunc(Bseq)
+    quote
+        siz = size($(esc(Bseq))[1])
+        grf = inv(Diagonal(ones(siz[1])) + BprodUDV($(esc(Bseq))))
+        grf
+    end
+end
+
+
 """
 进行looptime次的mc step，可以作为一个bin
 """
@@ -72,6 +81,7 @@ function obserflow(looptime::T,
     wgtsnow = Vector{Float64}(undef, length(shells))
     SCsnow = Vector{ComplexF64}(undef, length(shells))
     sgns = Vector{ComplexF64}(undef, length(shells))
+    grfs = Vector{Matrix{ComplexF64}}(undef, length(shells))
     #每一个观测量是一个元素
     obsers::Vector{Vector{Any}} = []
     #
@@ -82,8 +92,10 @@ function obserflow(looptime::T,
     @push_shell resc shells wgtsnow 1.0
     @push_shell resc shells SCsnow oldSC
     @push_shell resc shells sgns (real(oldSC) / abs(real(oldSC)))
+    baregrf = @__mcflow_gfunc Bseq
+    @push_shell resc shells grfs oldSC * baregrf / (abs(real(oldSC)))
     for (vidx, vexp) in enumerate(valexprs)
-        val = oldSC * vexp(Bseq) / abs(real(oldSC))
+        val = oldSC * vexp(baregrf) / abs(real(oldSC))
         push!(obsers, Vector{typeof(val)}(undef, length(shells)))
         @push_shell resc shells obsers[vidx] val
     end
@@ -138,23 +150,27 @@ function obserflow(looptime::T,
                 @push_shell resc shells wgtsnow oldwgt
                 @push_shell resc shells SCsnow oldSC
                 @push_shell resc shells sgns (real(oldSC) / abs(real(oldSC)))
+                baregrf = @__mcflow_gfunc Bseq
+                @push_shell resc shells grfs oldSC * baregrf / (abs(real(oldSC)))
                 for (vidx, vexp) in enumerate(valexprs)
-                    val = oldSC * vexp(Bseq) / abs(real(oldSC))
+                    val = oldSC * vexp(baregrf) / abs(real(oldSC))
                     @push_shell resc shells obsers[vidx] val
                 end
             end
         end
         #进行观测
         @add_shell resc shells sgns (real(oldSC) / abs(real(oldSC)))
+        baregrf = @__mcflow_gfunc Bseq
+        @add_shell resc shells grfs oldSC * baregrf / abs(real(oldSC))
         for (vidx, vexp) in enumerate(valexprs)
-            val = oldSC * vexp(Bseq) / abs(real(oldSC))
+            val = oldSC * vexp(baregrf) / abs(real(oldSC))
             #if resc < 0
             #    println(oldSC, " ", abs(real(oldSC)), " ", vexp(Bseq), " ", val)
             #end
             @add_shell resc shells obsers[vidx] val
         end
     end
-    return sgns, obsers
+    return sgns, grfs, obsers
 end
 
 
