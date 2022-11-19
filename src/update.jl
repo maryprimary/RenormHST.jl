@@ -78,6 +78,70 @@ macro flip(cfg, cidx)
 end
 
 
+"""
+将Bseq推进一个，Bseq=[B(1),B(2),...], 变成Bseq=[B(2)...B(1)]。
+需注意A=B(Ltrot)...B(2)B(1)数组和乘积是反过来的
+"""
+macro uptau_Bseq!(Bseq)
+    quote
+        #Bseq2 = Vector{Matrix{ComplexF64}}(undef, length($(esc(Bseq))))
+        fl = $(esc(Bseq))[1]
+        $(esc(Bseq))[1:end-1] = $(esc(Bseq))[2:end]
+        $(esc(Bseq))[end] = fl
+        $(esc(Bseq))
+    end
+end
+
+
+"""
+将Bprod推进一个
+"""
+macro uptau_Bprod!(Bprod, Bseq)
+
+end
+
+
+"""
+重新计算Bseq的第一个
+"""
+macro hspr_Bseq(Bseq, ohb, hsf)
+    quote
+        hub = $(esc(ohb))
+        Bseq2 = Vector{Matrix{ComplexF64}}(undef, length($(esc(Bseq))))
+        Bseq2[1] = Bmat_τ(hub.e_dτHk, hub.Hv, hub.Hg, $(esc(hsf)))
+        Bseq2[2:end] = $(esc(Bseq))[2:end]
+        Bseq2
+    end
+end
+
+
+"""
+更新一个Bmat
+"""
+macro hspr_Bmat(Bseq, ohb, site, hsnew, hsold)
+    η::Vector{ComplexF64} = [-√(6+2√6), -√(6-2√6), √(6-2√6), √(6+2√6)]
+    quote
+        hub = $(esc(ohb))
+        bmat = $(esc(Bseq))[1]
+        vmat = hub.Hg[$(esc(site))]*($(η)[$(esc(hsnew))]-$(η)[$(esc(hsold))])*hub.Hv[$(esc(site))]
+        #NOTE:
+        #在我们的标记下，e^(Hv)在Bmat的右侧，这里假设了所有的Hv是对易的，于是直接乘
+        bmat = bmat * exp(vmat)
+        Bseq2 = Vector{Matrix{ComplexF64}}(undef, length($(esc(Bseq))))
+        Bseq2[2:end] = $(esc(Bseq))[2:end]
+        Bseq2[1] = bmat
+        Bseq2
+    end
+end
+
+
+"""
+更新整个Bprod
+"""
+macro hspr_Bprod(Bprod, ohb, site, hsnew, hsold)
+
+end
+
 #=
 """
 迭代所有的格点
@@ -120,3 +184,4 @@ function Base.iterate(hsit::HSSweep, (count, cfg, wgt)=(0, missing, missing))
     return (cfg, wgt), (count+1, cfg, wgt)
 end
 =#
+

@@ -38,11 +38,12 @@ end
     function rho(grf)
         return 0.5*(grf[1, 1] + grf[2, 2])
     end
-    hk = [0 0; 0 0]
-    Δτ = 0.05
+    Random.seed!(23441)
+    hk = [0.0 0.0; 0.0 0.0]
+    Δτ = 0.02
     ohb = hubbard_onsite(hk, [1.6], Δτ)
     println(ohb)
-    inicfg = random_configuration(2, 1)
+    inicfg = random_configuration(5, 1)
     gamma = 0.25*[1-(√6/3), 1+(√6/3), 1+(√6/3), 1-(√6/3)]
     wgtori = prod(map(x->gamma[x], inicfg))
     ltm = 10000

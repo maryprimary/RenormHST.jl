@@ -18,12 +18,12 @@ function mcsum(looptime::T, hub::GeneralHubbard, inicfg::Matrix{P},
     cfgnow = copy(inicfg)
     prcfg = copy(cfgnow)
     wgtnow = 1.0
-    Bseq = Bmarr(cfgnow, hub)
-    SCnow = @sgn wgtnow Bseq
+    Bseqnow = Bmarr(cfgnow, hub)
+    SCnow = @sgn wgtnow Bseqnow
     println(cfgnow, SCnow)
     val = []
     sgn = real(SCnow) / abs(real(SCnow))
-    baregrf = @__mcsum_gfunc Bseq
+    baregrf = @__mcsum_gfunc Bseqnow
     grf = SCnow / (abs(real(SCnow))) * baregrf
     for vexp in valexprs
         push!(val, SCnow * vexp(baregrf) / abs(real(SCnow))) 
@@ -34,14 +34,29 @@ function mcsum(looptime::T, hub::GeneralHubbard, inicfg::Matrix{P},
         #    Bseq = Bmarr(cfg, $hub)
         #    val += @sgn wgt Bseq
         #end
+        # 重置参数
+        nowtau = 1
+        # 重置Bseq, Bprod
         for ind in CartesianIndices(inicfg)
+            #如果此时已经超过了, 推进Bseq和Bprod
+            if nowtau != ind[1]
+                nowtau = ind[1]
+                #推进Bseq
+                Bseqnow = @uptau_Bseq! Bseqnow
+                #推进Bprod
+            end
             prs = @flip cfgnow ind
             prcfg .= cfgnow
             prcfg[ind] = prs
             #println(ind, " ", prcfg)
             prwgt = _γ[prs] * wgtnow / _γ[cfgnow[ind]]
-            Bseq = Bmarr(prcfg, hub)
-            prSC = @sgn prwgt Bseq
+            #使用Bmarr
+            #prBseq = Bmarr(prcfg, hub)
+            #使用迭代Btop
+            #prBseq = @hspr_Bseq Bseqnow hub prcfg[nowtau, :]
+            prBseq = @hspr_Bmat Bseqnow hub ind[2] prcfg[ind] cfgnow[ind]
+            #
+            prSC = @sgn prwgt prBseq
             prpr = min(1.0, abs(real(prSC)) / abs(real(SCnow)))
             #println(prpr)
             #
@@ -49,11 +64,16 @@ function mcsum(looptime::T, hub::GeneralHubbard, inicfg::Matrix{P},
                 wgtnow = prwgt
                 SCnow = prSC
                 cfgnow .= prcfg
+                Bseqnow = prBseq
             end
-            #val[(prcfg[1]-1)*4+prcfg[2]] += 1
         end
+        #重新把1放到前面
+        @uptau_Bseq! Bseqnow
+        #使用Bmarr
+        #Bseqnow = Bmarr(cfgnow, hub)
+        #
         sgn += real(SCnow) / abs(real(SCnow))
-        baregrf = @__mcsum_gfunc Bseq
+        baregrf = @__mcsum_gfunc Bseqnow
         grf += SCnow * baregrf / abs(real(SCnow))
         for (vidx, vexp) in enumerate(valexprs)
             val[vidx] += SCnow * vexp(baregrf) / abs(real(SCnow))

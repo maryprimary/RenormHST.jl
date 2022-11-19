@@ -131,7 +131,7 @@ end
 从cfg计算Bseq
 """
 function Bmarr(cfg::Matrix{T}, hub::GeneralHubbard) where T <: Integer
-    Bseq = []
+    Bseq::Vector{Matrix{ComplexF64}} = []
     siz = size(cfg)
     @assert length(hub.Hv) == length(hub.Hg) == siz[2]
     for lidx in Base.OneTo(siz[1])
@@ -139,3 +139,5 @@ function Bmarr(cfg::Matrix{T}, hub::GeneralHubbard) where T <: Integer
     end
     return Bseq
 end
+
+

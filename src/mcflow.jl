@@ -73,9 +73,10 @@ function obserflow(looptime::T,
     _γ = [1-(√6/3), 1+(√6/3), 1+(√6/3), 1-(√6/3)]
     oldcfg = copy(inicfg)
     oldwgt = 1.0
+    oldBseq = Bmarr(oldcfg, hub)
+    oldSC = @sgn 1.0 oldBseq
+    #创建prcfg的数组
     prcfg = copy(inicfg)
-    Bseq = Bmarr(oldcfg, hub)
-    oldSC = @sgn 1.0 Bseq
     #println(cfgnow, SCnow)
     haverec = falses(length(shells))
     wgtsnow = Vector{Float64}(undef, length(shells))
@@ -92,7 +93,7 @@ function obserflow(looptime::T,
     @push_shell resc shells wgtsnow 1.0
     @push_shell resc shells SCsnow oldSC
     @push_shell resc shells sgns (real(oldSC) / abs(real(oldSC)))
-    baregrf = @__mcflow_gfunc Bseq
+    baregrf = @__mcflow_gfunc oldBseq
     @push_shell resc shells grfs oldSC * baregrf / (abs(real(oldSC)))
     for (vidx, vexp) in enumerate(valexprs)
         val = oldSC * vexp(baregrf) / abs(real(oldSC))
@@ -101,14 +102,24 @@ function obserflow(looptime::T,
     end
     #
     for itime in Base.OneTo(looptime)
+        #重置nowtau
+        nowtau = 1
         for ind in CartesianIndices(inicfg)
+            if nowtau != ind[1]
+                nowtau = ind[1]
+                #推进Bseq
+                oldBseq = @uptau_Bseq! oldBseq
+            end
             prs = @flip oldcfg ind
             prcfg .= oldcfg
             prcfg[ind] = prs
             #
             prwgt = _γ[prs] * oldwgt / _γ[oldcfg[ind]]
-            Bseq = Bmarr(prcfg, hub)
-            prSC = @sgn prwgt Bseq
+            #使用Bmarr
+            #prBseq = Bmarr(prcfg, hub)
+            #使用prBseq
+            prBseq = @hspr_Bmat oldBseq hub ind[2] prcfg[ind] oldcfg[ind]
+            prSC = @sgn prwgt prBseq
             #找到符合其抽样的位置
             isrec = @pull_shell real(prSC) shells haverec
             #如果查找不到，代表没有shell能包含现在的HS
@@ -134,6 +145,7 @@ function obserflow(looptime::T,
                     oldwgt = prwgt
                     oldSC = prSC
                     oldcfg .= prcfg
+                    oldBseq = prBseq
                     #记录到shell
                     resc = real(oldSC)
                     @push_shell resc shells wgtsnow oldwgt
@@ -144,13 +156,14 @@ function obserflow(looptime::T,
                 oldwgt = prwgt
                 oldSC = prSC
                 oldcfg .= prcfg
+                oldBseq = prBseq
                 #记录到shell
                 resc = real(oldSC)
                 @push_shell resc shells haverec true
                 @push_shell resc shells wgtsnow oldwgt
                 @push_shell resc shells SCsnow oldSC
                 @push_shell resc shells sgns (real(oldSC) / abs(real(oldSC)))
-                baregrf = @__mcflow_gfunc Bseq
+                baregrf = @__mcflow_gfunc oldBseq
                 @push_shell resc shells grfs oldSC * baregrf / (abs(real(oldSC)))
                 for (vidx, vexp) in enumerate(valexprs)
                     val = oldSC * vexp(baregrf) / abs(real(oldSC))
@@ -158,9 +171,16 @@ function obserflow(looptime::T,
                 end
             end
         end
+        #重新把1放到前面
+        @uptau_Bseq! oldBseq
+        #println(oldBseq)
+        #使用Bmarr
+        #oldBseq = Bmarr(oldcfg, hub)
+        #println(oldBseq)
+        #throw(error())
         #进行观测
         @add_shell resc shells sgns (real(oldSC) / abs(real(oldSC)))
-        baregrf = @__mcflow_gfunc Bseq
+        baregrf = @__mcflow_gfunc oldBseq
         @add_shell resc shells grfs oldSC * baregrf / abs(real(oldSC))
         for (vidx, vexp) in enumerate(valexprs)
             val = oldSC * vexp(baregrf) / abs(real(oldSC))
@@ -216,9 +236,10 @@ function omegaflow(looptime::T,
     _γ = [1-(√6/3), 1+(√6/3), 1+(√6/3), 1-(√6/3)]
     oldcfg = copy(inicfg)
     oldwgt = 1.0
+    oldBseq = Bmarr(oldcfg, hub)
+    oldSC = @sgn 1.0 oldBseq
+    #创建prcfg的数组
     prcfg = copy(inicfg)
-    Bseq = Bmarr(oldcfg, hub)
-    oldSC = @sgn 1.0 Bseq
     #println(cfgnow, SCnow)
     haverec = falses(length(shells))
     wgtsnow = zeros(Float64, length(shells))
@@ -236,14 +257,24 @@ function omegaflow(looptime::T,
     #prcount = 0
     #prpos = 0
     for itime in Base.OneTo(looptime)
+        #重置nowtau
+        nowtau = 1
         for ind in CartesianIndices(inicfg)
+            if nowtau != ind[1]
+                nowtau = ind[1]
+                #推进Bseq
+                oldBseq = @uptau_Bseq! oldBseq
+            end
             prs = @flip oldcfg ind
             prcfg .= oldcfg
             prcfg[ind] = prs
             #
             prwgt = _γ[prs] * oldwgt / _γ[oldcfg[ind]]
-            Bseq = Bmarr(prcfg, hub)
-            prSC = @sgn prwgt Bseq
+            #使用Bmarr
+            #prBseq = Bmarr(prcfg, hub)
+            #迭代
+            prBseq = @hspr_Bmat oldBseq hub ind[2] prcfg[ind] oldcfg[ind]
+            prSC = @sgn prwgt prBseq
             #找到符合其抽样的位置
             isrec = @pull_shell real(prSC) shells haverec
             #println(isrec)
@@ -276,6 +307,7 @@ function omegaflow(looptime::T,
                     oldwgt = prwgt
                     oldSC = prSC
                     oldcfg .= prcfg
+                    oldBseq = prBseq
                     #记录到shell
                     resc = real(oldSC)
                     @push_shell resc shells wgtsnow oldwgt
@@ -287,6 +319,7 @@ function omegaflow(looptime::T,
                 oldwgt = prwgt
                 oldSC = prSC
                 oldcfg .= prcfg
+                oldBseq = prBseq
                 #记录到shell
                 resc = real(oldSC)
                 @push_shell resc shells haverec true
@@ -295,6 +328,8 @@ function omegaflow(looptime::T,
                 @push_theta oldSC shells numsnow densnow
             end
         end
+        #重新把tau变成1
+        @uptau_Bseq! oldBseq
         #进行观测
         @add_theta oldSC shells numsnow densnow
     end

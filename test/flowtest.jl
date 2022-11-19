@@ -111,6 +111,10 @@ end
     #
     Random.seed!(21174)
     hk = zeros(6, 6)
+    hk[1, 2] = -1.0
+    hk[2, 1] = -1.0
+    hk[4, 5] = -1.0
+    hk[5, 4] = -1.0
     Δτ = 0.01
     ohb = hubbard_onsite(hk, [1.6, 1.6, 1.6], Δτ)
     inicfg = random_configuration(10, 3)
