@@ -14,7 +14,8 @@ include("hstrans.jl")
 export trotter_ρ, hsdecomposite, HSIter, random_configuration, Bmat_τ, Bmarr
 
 include("update.jl")
-export @sgn, @flip, @uptau_Bseq!, @uptau_Bprod!, @hspr_Bseq, @hspr_Bmat, @hspr_Bprod
+export @sgn, @sgn2, @flip, @uptau_Bseq!, @uptau_Bprod!
+export @hspr_Bseq, @hspr_Bmat, @hspr_Bprod
 
 include("mcsum.jl")
 export mcsum

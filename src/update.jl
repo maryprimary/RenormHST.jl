@@ -8,16 +8,17 @@ using LinearAlgebra
 
 mutable struct __updt_ctrl
     stblz :: Int64
+    Bpdre :: Int64
 end
 
-update_control = __updt_ctrl(10)
+update_control = __updt_ctrl(10, 10)
 
 
 
 """
 计算B的乘积
 """
-function Bprod(Bseq)
+function BprodS(Bseq)
     ret = Bseq[1]
     for lidx in Base.OneTo(length(Bseq)-1)
         ret = Bseq[lidx+1] * ret
@@ -65,6 +66,18 @@ macro sgn(wgt, Bseq)
     end
 end
 
+"""
+获取符号
+"""
+macro sgn2(wgt, Bprod)
+    quote
+        siz = size($(esc(Bprod)))
+        ind = Diagonal(ones(siz[1]))
+        $(esc(wgt))*det(ind + $(esc(Bprod)))
+    end
+end
+
+
 
 """
 翻转一个格子
@@ -95,9 +108,16 @@ end
 
 """
 将Bprod推进一个
+A=B(Ltrot)...B(2)B(1) -> A=B(1)B(Ltrot)...B(2)
 """
 macro uptau_Bprod!(Bprod, Bseq)
-
+    quote
+        fl = $(esc(Bseq))[1]
+        invfl = inv(fl)
+        _bp = $(esc(Bprod))
+        _bp = fl * _bp * invfl
+        _bp
+    end
 end
 
 
@@ -136,10 +156,18 @@ end
 
 
 """
-更新整个Bprod
+更新整个Bprod, A = B(Ltrot)...B(1) 
 """
 macro hspr_Bprod(Bprod, ohb, site, hsnew, hsold)
-
+    η::Vector{ComplexF64} = [-√(6+2√6), -√(6-2√6), √(6-2√6), √(6+2√6)]
+    quote
+        hub = $(esc(ohb))
+        vmat = hub.Hg[$(esc(site))]*($(η)[$(esc(hsnew))]-$(η)[$(esc(hsold))])*hub.Hv[$(esc(site))]
+        #NOTE:
+        #在我们的标记下，e^(Hv)在Bmat的右侧，这里假设了所有的Hv是对易的，于是直接乘
+        _bp = $(esc(Bprod)) * exp(vmat)
+        _bp
+    end
 end
 
 #=

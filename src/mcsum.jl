@@ -16,11 +16,14 @@ function mcsum(looptime::T, hub::GeneralHubbard, inicfg::Matrix{P},
     valexprs...) where {T<:Integer, P<:Integer}
     _γ = [1-(√6/3), 1+(√6/3), 1+(√6/3), 1-(√6/3)]
     cfgnow = copy(inicfg)
-    prcfg = copy(cfgnow)
     wgtnow = 1.0
     Bseqnow = Bmarr(cfgnow, hub)
-    SCnow = @sgn wgtnow Bseqnow
+    Bprodnow = BprodUDV(Bseqnow)
+    SCnow = @sgn2 wgtnow Bprodnow
+    #创建prcfg的数组
+    prcfg = copy(cfgnow)
     println(cfgnow, SCnow)
+    #
     val = []
     sgn = real(SCnow) / abs(real(SCnow))
     baregrf = @__mcsum_gfunc Bseqnow
@@ -41,9 +44,13 @@ function mcsum(looptime::T, hub::GeneralHubbard, inicfg::Matrix{P},
             #如果此时已经超过了, 推进Bseq和Bprod
             if nowtau != ind[1]
                 nowtau = ind[1]
+                #println(Bprodnow)
+                #println(BprodUDV(Bseqnow))
+                #推进Bprod, 要优先推进Bprod，因为这里用到了Bseqnow[1]
+                #TODO: 将Bprod和Bseq放在一起推进
+                Bprodnow = @uptau_Bprod! Bprodnow Bseqnow
                 #推进Bseq
                 Bseqnow = @uptau_Bseq! Bseqnow
-                #推进Bprod
             end
             prs = @flip cfgnow ind
             prcfg .= cfgnow
@@ -55,8 +62,11 @@ function mcsum(looptime::T, hub::GeneralHubbard, inicfg::Matrix{P},
             #使用迭代Btop
             #prBseq = @hspr_Bseq Bseqnow hub prcfg[nowtau, :]
             prBseq = @hspr_Bmat Bseqnow hub ind[2] prcfg[ind] cfgnow[ind]
+            #迭代Bprod
+            prBprod = @hspr_Bprod Bprodnow hub ind[2] prcfg[ind] cfgnow[ind]
             #
-            prSC = @sgn prwgt prBseq
+            #prSC = @sgn prwgt prBseq
+            prSC = @sgn2 prwgt prBprod
             prpr = min(1.0, abs(real(prSC)) / abs(real(SCnow)))
             #println(prpr)
             #
@@ -65,9 +75,11 @@ function mcsum(looptime::T, hub::GeneralHubbard, inicfg::Matrix{P},
                 SCnow = prSC
                 cfgnow .= prcfg
                 Bseqnow = prBseq
+                Bprodnow = prBprod
             end
         end
-        #重新把1放到前面
+        #重新把1放到前面, 先Bprod，后Bseq
+        @uptau_Bprod! Bprodnow Bseqnow
         @uptau_Bseq! Bseqnow
         #使用Bmarr
         #Bseqnow = Bmarr(cfgnow, hub)

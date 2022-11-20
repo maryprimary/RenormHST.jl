@@ -74,7 +74,9 @@ function obserflow(looptime::T,
     oldcfg = copy(inicfg)
     oldwgt = 1.0
     oldBseq = Bmarr(oldcfg, hub)
-    oldSC = @sgn 1.0 oldBseq
+    oldBprod = BprodUDV(oldBseq)
+    oldSC = @sgn2 1.0 oldBprod
+    #@sgn 1.0 oldBseq
     #创建prcfg的数组
     prcfg = copy(inicfg)
     #println(cfgnow, SCnow)
@@ -104,9 +106,14 @@ function obserflow(looptime::T,
     for itime in Base.OneTo(looptime)
         #重置nowtau
         nowtau = 1
+        if mod(itime, update_control.Bpdre) == 0
+            oldBprod = BprodUDV(oldBseq)
+        end
         for ind in CartesianIndices(inicfg)
             if nowtau != ind[1]
                 nowtau = ind[1]
+                #推进Bprod
+                oldBprod = @uptau_Bprod! oldBprod oldBseq
                 #推进Bseq
                 oldBseq = @uptau_Bseq! oldBseq
             end
@@ -119,7 +126,9 @@ function obserflow(looptime::T,
             #prBseq = Bmarr(prcfg, hub)
             #使用prBseq
             prBseq = @hspr_Bmat oldBseq hub ind[2] prcfg[ind] oldcfg[ind]
-            prSC = @sgn prwgt prBseq
+            prBprod = @hspr_Bprod oldBprod hub ind[2] prcfg[ind] oldcfg[ind]
+            prSC = @sgn2 prwgt prBprod
+            #prSC2 = @sgn prwgt prBseq
             #找到符合其抽样的位置
             isrec = @pull_shell real(prSC) shells haverec
             #如果查找不到，代表没有shell能包含现在的HS
@@ -146,6 +155,7 @@ function obserflow(looptime::T,
                     oldSC = prSC
                     oldcfg .= prcfg
                     oldBseq = prBseq
+                    oldBprod = prBprod
                     #记录到shell
                     resc = real(oldSC)
                     @push_shell resc shells wgtsnow oldwgt
@@ -157,6 +167,7 @@ function obserflow(looptime::T,
                 oldSC = prSC
                 oldcfg .= prcfg
                 oldBseq = prBseq
+                oldBprod = prBprod
                 #记录到shell
                 resc = real(oldSC)
                 @push_shell resc shells haverec true
@@ -172,7 +183,11 @@ function obserflow(looptime::T,
             end
         end
         #重新把1放到前面
+        @uptau_Bprod! oldBprod oldBseq
         @uptau_Bseq! oldBseq
+        #
+        #println(@sgn 1.0 oldBseq)
+        #println(@sgn2 1.0 oldBprod)
         #println(oldBseq)
         #使用Bmarr
         #oldBseq = Bmarr(oldcfg, hub)
@@ -237,7 +252,8 @@ function omegaflow(looptime::T,
     oldcfg = copy(inicfg)
     oldwgt = 1.0
     oldBseq = Bmarr(oldcfg, hub)
-    oldSC = @sgn 1.0 oldBseq
+    oldBprod = BprodUDV(oldBseq)
+    oldSC = @sgn2 1.0 oldBprod
     #创建prcfg的数组
     prcfg = copy(inicfg)
     #println(cfgnow, SCnow)
@@ -259,9 +275,14 @@ function omegaflow(looptime::T,
     for itime in Base.OneTo(looptime)
         #重置nowtau
         nowtau = 1
+        if mod(itime, update_control.Bpdre) == 0
+            oldBprod = BprodUDV(oldBseq)
+        end
         for ind in CartesianIndices(inicfg)
             if nowtau != ind[1]
                 nowtau = ind[1]
+                #推进Bprod
+                oldBprod = @uptau_Bprod! oldBprod oldBseq
                 #推进Bseq
                 oldBseq = @uptau_Bseq! oldBseq
             end
@@ -274,7 +295,8 @@ function omegaflow(looptime::T,
             #prBseq = Bmarr(prcfg, hub)
             #迭代
             prBseq = @hspr_Bmat oldBseq hub ind[2] prcfg[ind] oldcfg[ind]
-            prSC = @sgn prwgt prBseq
+            prBprod = @hspr_Bprod oldBprod hub ind[2] prcfg[ind] oldcfg[ind]
+            prSC = @sgn2 prwgt prBprod
             #找到符合其抽样的位置
             isrec = @pull_shell real(prSC) shells haverec
             #println(isrec)
@@ -308,6 +330,7 @@ function omegaflow(looptime::T,
                     oldSC = prSC
                     oldcfg .= prcfg
                     oldBseq = prBseq
+                    oldBprod = prBprod
                     #记录到shell
                     resc = real(oldSC)
                     @push_shell resc shells wgtsnow oldwgt
@@ -320,6 +343,7 @@ function omegaflow(looptime::T,
                 oldSC = prSC
                 oldcfg .= prcfg
                 oldBseq = prBseq
+                oldBprod = prBprod
                 #记录到shell
                 resc = real(oldSC)
                 @push_shell resc shells haverec true
@@ -329,6 +353,7 @@ function omegaflow(looptime::T,
             end
         end
         #重新把tau变成1
+        @uptau_Bprod! oldBprod oldBseq
         @uptau_Bseq! oldBseq
         #进行观测
         @add_theta oldSC shells numsnow densnow
