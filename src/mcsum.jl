@@ -22,7 +22,7 @@ function mcsum(looptime::T, hub::GeneralHubbard, inicfg::Matrix{P},
     SCnow = @sgn2 wgtnow Bprodnow
     #创建prcfg的数组
     prcfg = copy(cfgnow)
-    println(cfgnow, SCnow)
+    println(SCnow)
     #
     val = []
     sgn = real(SCnow) / abs(real(SCnow))
@@ -39,7 +39,9 @@ function mcsum(looptime::T, hub::GeneralHubbard, inicfg::Matrix{P},
         #end
         # 重置参数
         nowtau = 1
-        # 重置Bseq, Bprod
+        if mod(itime, update_control.Bpdre) == 0
+            Bprodnow = BprodUDV(Bseqnow)
+        end
         for ind in CartesianIndices(inicfg)
             #如果此时已经超过了, 推进Bseq和Bprod
             if nowtau != ind[1]

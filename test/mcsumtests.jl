@@ -44,8 +44,10 @@ end
     ohb = hubbard_onsite(hk, [1.6], Δτ)
     println(ohb)
     inicfg = random_configuration(5, 1)
+    inicfg = warmup_configuration(1000, ohb, inicfg)
     gamma = 0.25*[1-(√6/3), 1+(√6/3), 1+(√6/3), 1-(√6/3)]
     wgtori = prod(map(x->gamma[x], inicfg))
+    println(wgtori, " wgtori")
     ltm = 10000
     sgn, grf, val = mcsum(ltm, ohb, inicfg, rho)
     #println(16*val*wgtori/ltm)

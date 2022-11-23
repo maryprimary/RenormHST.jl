@@ -17,6 +17,9 @@ include("update.jl")
 export @sgn, @sgn2, @flip, @uptau_Bseq!, @uptau_Bprod!
 export @hspr_Bseq, @hspr_Bmat, @hspr_Bprod
 
+include("mccommon.jl")
+export warmup_configuration
+
 include("mcsum.jl")
 export mcsum
 

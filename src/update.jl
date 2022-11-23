@@ -11,7 +11,7 @@ mutable struct __updt_ctrl
     Bpdre :: Int64
 end
 
-update_control = __updt_ctrl(10, 10)
+update_control = __updt_ctrl(10, 1)
 
 
 

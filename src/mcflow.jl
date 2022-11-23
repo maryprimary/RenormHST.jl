@@ -124,11 +124,11 @@ function obserflow(looptime::T,
             prwgt = _γ[prs] * oldwgt / _γ[oldcfg[ind]]
             #使用Bmarr
             #prBseq = Bmarr(prcfg, hub)
+            #prSC = @sgn prwgt prBseq
             #使用prBseq
             prBseq = @hspr_Bmat oldBseq hub ind[2] prcfg[ind] oldcfg[ind]
             prBprod = @hspr_Bprod oldBprod hub ind[2] prcfg[ind] oldcfg[ind]
             prSC = @sgn2 prwgt prBprod
-            #prSC2 = @sgn prwgt prBseq
             #找到符合其抽样的位置
             isrec = @pull_shell real(prSC) shells haverec
             #如果查找不到，代表没有shell能包含现在的HS
@@ -160,6 +160,13 @@ function obserflow(looptime::T,
                     resc = real(oldSC)
                     @push_shell resc shells wgtsnow oldwgt
                     @push_shell resc shells SCsnow oldSC 
+                    #bseq2 = Bmarr(oldcfg, hub)
+                    #println((@sgn 1.0 bseq2), "bmarr")
+                    #println((@sgn 1.0 oldBseq), "bseq")
+                    #println((@sgn2 1.0 oldBprod), "bprod")
+                    #if itime > 10
+                    #throw(error())
+                    #end
                 end
             else
                 #如果之前没有记录，直接加入
@@ -185,10 +192,6 @@ function obserflow(looptime::T,
         #重新把1放到前面
         @uptau_Bprod! oldBprod oldBseq
         @uptau_Bseq! oldBseq
-        #
-        #println(@sgn 1.0 oldBseq)
-        #println(@sgn2 1.0 oldBprod)
-        #println(oldBseq)
         #使用Bmarr
         #oldBseq = Bmarr(oldcfg, hub)
         #println(oldBseq)
@@ -293,6 +296,7 @@ function omegaflow(looptime::T,
             prwgt = _γ[prs] * oldwgt / _γ[oldcfg[ind]]
             #使用Bmarr
             #prBseq = Bmarr(prcfg, hub)
+            #prSC = @sgn prwgt prBseq
             #迭代
             prBseq = @hspr_Bmat oldBseq hub ind[2] prcfg[ind] oldcfg[ind]
             prBprod = @hspr_Bprod oldBprod hub ind[2] prcfg[ind] oldcfg[ind]
@@ -336,6 +340,7 @@ function omegaflow(looptime::T,
                     @push_shell resc shells wgtsnow oldwgt
                     @push_shell resc shells SCsnow oldSC 
                     #prcount += 1
+                    #println(oldwgt)
                 end
             else
                 #如果之前没有记录，直接加入
@@ -355,6 +360,9 @@ function omegaflow(looptime::T,
         #重新把tau变成1
         @uptau_Bprod! oldBprod oldBseq
         @uptau_Bseq! oldBseq
+        #bseq2 = Bmarr(oldcfg, hub)
+        #println((@sgn 1.0 bseq2), "bmarr")
+        #println((@sgn2 1.0 oldBprod), "bprod")
         #进行观测
         @add_theta oldSC shells numsnow densnow
     end

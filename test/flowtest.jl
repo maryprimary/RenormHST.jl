@@ -98,7 +98,7 @@ end
 
 
 @testset "shell" begin
-    shells0 = obser_shells([-1e40, -1e30, -1e13, 0.0])
+    shells0 = obser_shells([-1e40, -1e30, -1e13])
     shells1, shells2 = omega_shells(shells0)
     println(shells0)
     println(shells1)
@@ -115,9 +115,13 @@ end
     hk[2, 1] = -1.0
     hk[4, 5] = -1.0
     hk[5, 4] = -1.0
+    hk[1, 1] = 4.1
+    hk[3, 3] = 3.4
+    hk[4, 4] = 3.2
     Δτ = 0.01
     ohb = hubbard_onsite(hk, [1.6, 1.6, 1.6], Δτ)
     inicfg = random_configuration(10, 3)
+    inicfg = warmup_configuration(1000, ohb, inicfg)
     ltm = 10000
     #
     oshell = Vector{SignShell}(undef, length(shells1)+length(shells2))
