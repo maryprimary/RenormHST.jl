@@ -26,9 +26,9 @@ using LinearAlgebra
     (6, 7), (7, 6), (6, 8), (8, 6), (7, 8), (8, 7)])
     #hk1 = hubbard_hk(hs, [(1, 1)])
     #hk2 = hubbard_hk(hs, [(2, 2)])
-    hu = hubbard_hu(hs, [3.2, 3.2, 3.2, 3.2])
-    hh = hu + hk - 0.8*hmu
-    rho = exp(-2.0*hh)
+    hu = hubbard_hu(hs, [1.0, 1.0, 1.0, 1.0])
+    hh = hu + hk + 0.25*hmu
+    rho = exp(-4.0*hh)
     den = zeros(8)
     for (cidx, cfg) in enumerate(hs)
         for idx in Base.OneTo(8)
@@ -77,7 +77,7 @@ end
     Δτ = 0.1
     ohb = hubbard_onsite(hk, [1.6, 1.6, 1.6], Δτ)
     inicfg = random_configuration(5, 3)
-    ltm = 100000
+    ltm = 5000
     #
     nums, dens = omegaflow(ltm, ohb, inicfg, shells1)
     sgn, grf, val = obserflow(ltm, ohb, inicfg, shells0, rho)
@@ -121,12 +121,12 @@ end
     println(hk)
     println(eigvals(hk))
     Δτ = 0.1
-    ohb = hubbard_onsite(hk, [1.6, 1.6, 1.6, 1.6], Δτ)
-    inicfg = random_configuration(20, 4)
+    ohb = hubbard_onsite(hk, [-0.5, -0.5, -0.5, -0.5], Δτ)
+    inicfg = random_configuration(40, 4)
     inicfg = warmup_configuration(10000, ohb, inicfg)
     ltm = 20000
     btm = 4
-    println(sgn_hist(ltm, ohb, inicfg, 500))
+    #println(sgn_hist(ltm, ohb, inicfg, 500))
     #return
     #求所有的omega
     oshell = Vector{SignShell}(undef, length(shells1)+length(shells2))

@@ -92,7 +92,7 @@ function hubbard_onsite(hk, usite, Δτ)
     for idx in Base.OneTo(nsite)
         op = zeros(2*nsite, 2*nsite)
         op[idx, idx] = 1.0
-        op[idx+nsite, idx+nsite] = 1.0
+        op[idx+nsite, idx+nsite] = -1.0
         push!(ops, op)
     end
     return GeneralHubbard(
