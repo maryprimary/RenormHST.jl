@@ -18,7 +18,7 @@ export @sgn, @sgn2, @flip, @uptau_Bseq!, @uptau_Bprod!
 export @hspr_Bseq, @hspr_Bmat, @hspr_Bprod
 
 include("mccommon.jl")
-export warmup_configuration
+export warmup_configuration, sgn_hist
 
 include("mcsum.jl")
 export mcsum
