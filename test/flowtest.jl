@@ -26,9 +26,9 @@ using LinearAlgebra
     (6, 7), (7, 6), (6, 8), (8, 6), (7, 8), (8, 7)])
     #hk1 = hubbard_hk(hs, [(1, 1)])
     #hk2 = hubbard_hk(hs, [(2, 2)])
-    hu = hubbard_hu(hs, [1.0, 1.0, 1.0, 1.0])
-    hh = hu + hk + 0.25*hmu
-    rho = exp(-4.0*hh)
+    hu = hubbard_hu(hs, [8.0, 8.0, 8.0, 8.0])
+    hh = hu + hk + 2.0*hmu
+    rho = exp(-10.0*hh)
     den = zeros(8)
     for (cidx, cfg) in enumerate(hs)
         for idx in Base.OneTo(8)
@@ -38,6 +38,33 @@ using LinearAlgebra
     println(tr(rho), den/tr(rho))
 end
 
+
+@testset "exact 6 site" begin
+    hs = fermi_hilbert(12)
+    #-2
+    hmu = hubbard_hk(hs, [(idx, idx) for idx in 1:1:12])
+    #
+    hk = hubbard_hk(hs, [(1, 2), (1, 3), (1, 5), (1, 6), (2, 3), (2, 4),
+    (2, 6), (2, 1), (3, 4), (3, 5), (3, 1), (3, 2), (4, 5), (4, 6),
+    (4, 2), (4, 3), (5, 6), (5, 1), (5, 3), (5, 4),
+    (6, 1), (6, 2), (6, 4), (6, 5),
+    (7, 8), (7, 9), (7, 11), (7, 12), (8, 9), (8, 10),
+    (8, 12), (8, 7), (9, 10), (9, 11), (9, 7), (9, 8), (10, 11), (10, 12),
+    (10, 8), (10, 9), (11, 12), (11, 7), (11, 9), (11, 10),
+    (12, 7), (12, 8), (12, 10), (12, 11)])
+    #hk1 = hubbard_hk(hs, [(1, 1)])
+    #hk2 = hubbard_hk(hs, [(2, 2)])
+    hu = hubbard_hu(hs, [6.0, 6.0, 6.0, 6.0, 6.0, 6.0])
+    hh = hu + hk + 1.5*hmu
+    rho = exp(-6.0*hh)
+    den = zeros(12)
+    for (cidx, cfg) in enumerate(hs)
+        for idx in Base.OneTo(12)
+            den[idx] += cfg[idx] == '1' ? rho[cidx, cidx] : 0
+        end
+    end
+    println(tr(rho), den/tr(rho))
+end
 
 #=
 @testset "mc ord" begin
