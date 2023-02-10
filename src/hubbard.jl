@@ -22,16 +22,28 @@ function hubbard_hk(hs, bonds)
                 continue
             end
             lst = stl[1:bnd[1]-1]*"0"
+            lsgn = 1
+            for idx in 1:1:(bnd[1]-1)
+                if stl[idx] == '1'
+                    lsgn = lsgn * (-1)
+                end
+            end
             if bnd[1] < length(stl)
                 lst = lst*stl[bnd[1]+1:end]
             end
             rst = str[1:bnd[2]-1]*"0"
+            rsgn = 1
+            for idx in 1:1:(bnd[2]-1)
+                if str[idx] == '1'
+                    rsgn = rsgn * (-1)
+                end
+            end
             if bnd[2] < length(str)
                 rst = rst*str[bnd[2]+1:end]
             end
             if lst == rst
-                ham[idx1, idx2] -= 1.0
-                ham[idx2, idx1] -= 1.0
+                ham[idx1, idx2] -= 1.0 * rsgn * lsgn
+                ham[idx2, idx1] -= 1.0 * rsgn * lsgn
             end
         end
     end; end
@@ -80,7 +92,7 @@ function hubbard_onsite(hk, usite, Δτ)
     for idx in Base.OneTo(nsite)
         op = zeros(2*nsite, 2*nsite)
         op[idx, idx] = 1.0
-        op[idx+nsite, idx+nsite] = 1.0
+        op[idx+nsite, idx+nsite] = -1.0
         push!(ops, op)
     end
     return GeneralHubbard(

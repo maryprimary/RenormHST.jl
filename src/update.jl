@@ -8,16 +8,17 @@ using LinearAlgebra
 
 mutable struct __updt_ctrl
     stblz :: Int64
+    Bpdre :: Int64
 end
 
-update_control = __updt_ctrl(10)
+update_control = __updt_ctrl(10, 1)
 
 
 
 """
 计算B的乘积
 """
-function Bprod(Bseq)
+function BprodS(Bseq)
     ret = Bseq[1]
     for lidx in Base.OneTo(length(Bseq)-1)
         ret = Bseq[lidx+1] * ret
@@ -65,6 +66,18 @@ macro sgn(wgt, Bseq)
     end
 end
 
+"""
+获取符号
+"""
+macro sgn2(wgt, Bprod)
+    quote
+        siz = size($(esc(Bprod)))
+        ind = Diagonal(ones(siz[1]))
+        $(esc(wgt))*det(ind + $(esc(Bprod)))
+    end
+end
+
+
 
 """
 翻转一个格子
@@ -77,6 +90,85 @@ macro flip(cfg, cidx)
     end
 end
 
+
+"""
+将Bseq推进一个，Bseq=[B(1),B(2),...], 变成Bseq=[B(2)...B(1)]。
+需注意A=B(Ltrot)...B(2)B(1)数组和乘积是反过来的
+"""
+macro uptau_Bseq!(Bseq)
+    quote
+        #Bseq2 = Vector{Matrix{ComplexF64}}(undef, length($(esc(Bseq))))
+        fl = $(esc(Bseq))[1]
+        $(esc(Bseq))[1:end-1] = $(esc(Bseq))[2:end]
+        $(esc(Bseq))[end] = fl
+        $(esc(Bseq))
+    end
+end
+
+
+"""
+将Bprod推进一个
+A=B(Ltrot)...B(2)B(1) -> A=B(1)B(Ltrot)...B(2)
+"""
+macro uptau_Bprod!(Bprod, Bseq)
+    quote
+        fl = $(esc(Bseq))[1]
+        invfl = inv(fl)
+        _bp = $(esc(Bprod))
+        _bp = fl * _bp * invfl
+        _bp
+    end
+end
+
+
+"""
+重新计算Bseq的第一个
+"""
+macro hspr_Bseq(Bseq, ohb, hsf)
+    quote
+        hub = $(esc(ohb))
+        Bseq2 = Vector{Matrix{ComplexF64}}(undef, length($(esc(Bseq))))
+        Bseq2[1] = Bmat_τ(hub.e_dτHk, hub.Hv, hub.Hg, $(esc(hsf)))
+        Bseq2[2:end] = $(esc(Bseq))[2:end]
+        Bseq2
+    end
+end
+
+
+"""
+更新一个Bmat
+"""
+macro hspr_Bmat(Bseq, ohb, site, hsnew, hsold)
+    η::Vector{ComplexF64} = [-√(6+2√6), -√(6-2√6), √(6-2√6), √(6+2√6)]
+    quote
+        hub = $(esc(ohb))
+        bmat = $(esc(Bseq))[1]
+        vmat = hub.Hg[$(esc(site))]*($(η)[$(esc(hsnew))]-$(η)[$(esc(hsold))])*hub.Hv[$(esc(site))]
+        #NOTE:
+        #在我们的标记下，e^(Hv)在Bmat的右侧，这里假设了所有的Hv是对易的，于是直接乘
+        bmat = bmat * exp(vmat)
+        Bseq2 = Vector{Matrix{ComplexF64}}(undef, length($(esc(Bseq))))
+        Bseq2[2:end] = $(esc(Bseq))[2:end]
+        Bseq2[1] = bmat
+        Bseq2
+    end
+end
+
+
+"""
+更新整个Bprod, A = B(Ltrot)...B(1) 
+"""
+macro hspr_Bprod(Bprod, ohb, site, hsnew, hsold)
+    η::Vector{ComplexF64} = [-√(6+2√6), -√(6-2√6), √(6-2√6), √(6+2√6)]
+    quote
+        hub = $(esc(ohb))
+        vmat = hub.Hg[$(esc(site))]*($(η)[$(esc(hsnew))]-$(η)[$(esc(hsold))])*hub.Hv[$(esc(site))]
+        #NOTE:
+        #在我们的标记下，e^(Hv)在Bmat的右侧，这里假设了所有的Hv是对易的，于是直接乘
+        _bp = $(esc(Bprod)) * exp(vmat)
+        _bp
+    end
+end
 
 #=
 """
@@ -120,3 +212,4 @@ function Base.iterate(hsit::HSSweep, (count, cfg, wgt)=(0, missing, missing))
     return (cfg, wgt), (count+1, cfg, wgt)
 end
 =#
+
